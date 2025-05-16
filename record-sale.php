@@ -77,7 +77,7 @@ require_once 'includes/header.php';
                         </div>
                         <div class="product-info-item">
                             <span class="product-info-label">Price:</span>
-                            <span class="product-info-value">$<?php echo number_format($product['price'], 2); ?></span>
+                            <span class="product-info-value">$<?php echo number_format($product['selling_price'], 2); ?></span>
                         </div>
                         <div class="product-info-item">
                             <span class="product-info-label">Available Quantity:</span>
@@ -105,7 +105,7 @@ require_once 'includes/header.php';
                                     <div class="input-group-prepend">
                                         <span class="input-group-text">$</span>
                                     </div>
-                                    <input type="text" class="form-control" id="total" value="<?php echo number_format($product['price'], 2); ?>" readonly>
+                                    <input type="text" class="form-control" id="total" value="<?php echo number_format($product['selling_price'] , 2); ?>" readonly>
                                 </div>
                             </div>
                             <button type="submit" class="btn btn-success btn-block">
@@ -173,7 +173,7 @@ require_once 'includes/header.php';
 <script>
 document.getElementById('quantity').addEventListener('input', function() {
     var quantity = this.value;
-    var price = <?php echo $product['price']; ?>;
+    var price = <?php echo $product['selling_price']; ?>;
     var total = quantity * price;
     document.getElementById('total').value = total.toFixed(2);
 });

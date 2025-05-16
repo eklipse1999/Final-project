@@ -2,8 +2,15 @@
 require_once 'includes/functions.php';
 requireLogin();
 
-// Get sales data
-$sales = getSalesReport();
+// Connect to the database
+$conn = connectDB();
+
+if (hasRole('admin')) {
+    $sales = getGroupedSalesReport($conn); // No filter
+} else {
+    $today = date('Y-m-d');
+    $sales = getGroupedSalesReport($conn, $today); // Filter by today
+}
 
 require_once 'includes/header.php';
 ?>
@@ -35,23 +42,30 @@ require_once 'includes/header.php';
                 <table class="table table-bordered table-hover" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th>Transaction ID</th>
                             <th>Product</th>
                             <th>Quantity</th>
-                            <th>Total</th>
+                            <th>Total Price</th>
                             <th>Date</th>
                             <th>Sold By</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($sales as $sale): ?>
-                            <tr>
-                                <td><?php echo $sale['id']; ?></td>
-                                <td><?php echo $sale['name']; ?></td>
-                                <td><?php echo $sale['quantity']; ?></td>
-                                <td>$<?php echo number_format($sale['total_price'], 2); ?></td>
-                                <td><?php echo $sale['sale_date']; ?></td>
-                                <td><?php echo $sale['username']; ?></td>
+                        <?php foreach ($sales as $transaction): ?>
+                            <?php foreach ($transaction['products'] as $sale): ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($transaction['transaction_id']); ?></td>
+                                    <td><?php echo htmlspecialchars($sale['name']); ?></td>
+                                    <td><?php echo (int)$sale['quantity']; ?></td>
+                                    <td>$<?php echo number_format($sale['total_price'], 2); ?></td>
+                                    <td><?php echo htmlspecialchars($sale['sale_date']); ?></td>
+                                    <td><?php echo htmlspecialchars($sale['username']); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                            <tr class="table-success">
+                                <td></td>
+                                <td colspan="2" class="text-right font-weight-bold">Total for Transaction:</td>
+                                <td colspan="3" class="font-weight-bold">$<?php echo number_format($transaction['total'], 2); ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -67,7 +81,7 @@ require_once 'includes/header.php';
         color: #5a5c69;
         margin-bottom: 0.5rem;
     }
-    
+
     .page-subtitle {
         color: #858796;
         margin-bottom: 0;
@@ -75,4 +89,3 @@ require_once 'includes/header.php';
 </style>
 
 <?php require_once 'includes/footer.php'; ?>
-

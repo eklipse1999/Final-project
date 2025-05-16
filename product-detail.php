@@ -44,7 +44,7 @@ require_once 'includes/header.php';
                         </div>
                         <div class="product-info-item">
                             <span class="product-info-label">Price:</span>
-                            <span class="product-info-value">$<?php echo number_format($product['price'], 2); ?></span>
+                            <span class="product-info-value">$<?php echo number_format($product['selling_price'], 2); ?></span>
                         </div>
                         <div class="product-info-item">
                             <span class="product-info-label">Quantity in Stock:</span>
@@ -60,7 +60,7 @@ require_once 'includes/header.php';
                         </div>
                         <div class="product-info-item">
                             <span class="product-info-label">Total Value:</span>
-                            <span class="product-info-value">$<?php echo number_format($product['price'] * $product['quantity'], 2); ?></span>
+                            <span class="product-info-value">$<?php echo number_format($product['selling_price'] * $product['quantity'], 2); ?></span>
                         </div>
                     </div>
                     <div class="col-md-6">

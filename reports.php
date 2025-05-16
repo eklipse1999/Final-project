@@ -162,9 +162,9 @@ require_once 'includes/header.php';
                                 <td><?php echo $product['id']; ?></td>
                                 <td><?php echo $product['name']; ?></td>
                                 <td><?php echo $product['sku']; ?></td>
-                                <td>$<?php echo number_format($product['price'], 2); ?></td>
+                                <td>$<?php echo number_format($product['selling_price'], 2); ?></td>
                                 <td class="text-danger"><?php echo $product['quantity']; ?></td>
-                                <td>$<?php echo number_format($product['price'] * $product['quantity'], 2); ?></td>
+                                <td>$<?php echo number_format($product['selling_price'] * $product['quantity'], 2); ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -241,11 +241,7 @@ require_once 'includes/header.php';
 </style>
 
 <script>
-// Add keyboard shortcut for printing (Ctrl+P is handled by browser)
-document.addEventListener('keydown', function(e) {
-    // You can add custom behavior here if needed
-    // The browser already handles Ctrl+P
-});
+document.addEventListener('keydown', function(e) {});
 </script>
 
 <?php require_once 'includes/footer.php'; ?>

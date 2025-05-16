@@ -7,20 +7,24 @@ $error = '';
 
 // Delete product
 if (isset($_GET['delete']) && hasRole('manager')) {
-   $id = sanitize($_GET['delete']);
-   
-   if (deleteProduct($id)) {
-       $success = "Product deleted successfully";
-   } else {
-       $error = "Error deleting product";
-   }
-}
+    $id = sanitize($_GET['delete']);
+    $result = deleteProduct($id);
+ 
+    if ($result === "deleted") {
+        $success = "Product deleted successfully.";
+    } elseif ($result === "linked") {
+        $error = "Cannot delete product: it has related sales records.";
+    } else {
+        $error = "An unexpected error occurred while deleting the product.";
+    }
+ }
+ 
 
 // Get search term if provided
 $search = isset($_GET['search']) ? sanitize($_GET['search']) : '';
 
 // Get all products (filtered by search if provided)
-$products = getAllProducts($search);
+$products = getAllProductsWithStockStatus($search);
 
 require_once 'includes/header.php';
 ?>
@@ -104,8 +108,10 @@ require_once 'includes/header.php';
                             <th>ID</th>
                             <th>Name</th>
                             <th>SKU</th>
-                            <th>Price</th>
-                            <th>Quantity</th>
+                            <th>Purchase Price</th>
+                            <th>Unit Price</th>
+                            <th>Selling Price</th>
+                            <th>Stock Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -115,13 +121,20 @@ require_once 'includes/header.php';
                                 <td><?php echo $product['id']; ?></td>
                                 <td><?php echo $product['name']; ?></td>
                                 <td><?php echo $product['sku']; ?></td>
-                                <td>$<?php echo number_format($product['price'], 2); ?></td>
+                                <td>$<?php echo number_format($product['purchase_price'], 2); ?></td>
+                                <td>$<?php echo number_format($product['unit_price'], 2); ?></td>
+                                <td>$<?php echo number_format($product['selling_price'], 2); ?></td>
                                 <td>
-                                    <?php 
-                                    if ($product['quantity'] <= 10) {
-                                        echo '<span class="badge badge-danger">' . $product['quantity'] . '</span>';
+                                    <?php
+                                    $stockStatus = $product['status'];
+                                    
+                                    // Apply the conditions for displaying stock status
+                                    if ($stockStatus == 0) {
+                                        echo '<span class="bange bange-danger">'. 'Out of Stock'. '</span>';
+                                    } elseif ($stockStatus <= 10) {
+                                        echo "Low Stock";
                                     } else {
-                                        echo '<span class="badge badge-success">' . $product['quantity'] . '</span>';
+                                        echo '<span class="bange bange-success">'. 'In Stock'. '</span>';
                                     }
                                     ?>
                                 </td>
@@ -130,7 +143,7 @@ require_once 'includes/header.php';
                                         <a href="product-detail.php?id=<?php echo $product['id']; ?>" class="btn btn-sm btn-info" data-toggle="tooltip" title="View">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <?php if (hasRole('manager')): ?>
+                                        <?php if (hasRole('manager' || 'admin')): ?>
                                             <a href="product-form.php?id=<?php echo $product['id']; ?>" class="btn btn-sm btn-warning" data-toggle="tooltip" title="Edit">
                                                 <i class="fas fa-edit"></i>
                                             </a>
@@ -172,54 +185,54 @@ require_once 'includes/header.php';
         border-radius: 0.25rem;
     }
 
-/* Add styles for search form */
-.search-form {
-    margin-bottom: 0;
-}
-
-.search-form .form-control {
-    border-radius: 50px 0 0 50px;
-    padding-left: 1.5rem;
-}
-
-.search-form .btn {
-    border-radius: 0 50px 50px 0;
-    padding-left: 1.2rem;
-    padding-right: 1.2rem;
-}
-
-.search-form .btn-secondary {
-    border-radius: 50px;
-    margin-left: 0.5rem;
-}
-
-/* Highlight search results */
-.highlight {
-    background-color: #fff3cd;
-    padding: 0.1rem 0.2rem;
-    border-radius: 3px;
-}
-
-@media (max-width: 576px) {
-    .search-form .input-group {
-        flex-direction: column;
+    /* Add styles for search form */
+    .search-form {
+        margin-bottom: 0;
     }
-    
-    .search-form .form-control,
+
+    .search-form .form-control {
+        border-radius: 50px 0 0 50px;
+        padding-left: 1.5rem;
+    }
+
     .search-form .btn {
+        border-radius: 0 50px 50px 0;
+        padding-left: 1.2rem;
+        padding-right: 1.2rem;
+    }
+
+    .search-form .btn-secondary {
         border-radius: 50px;
-        margin-bottom: 0.5rem;
+        margin-left: 0.5rem;
     }
-    
-    .search-form .input-group-append {
-        display: flex;
-        width: 100%;
+
+    /* Highlight search results */
+    .highlight {
+        background-color: #fff3cd;
+        padding: 0.1rem 0.2rem;
+        border-radius: 3px;
     }
-    
-    .search-form .input-group-append .btn {
-        flex: 1;
+
+    @media (max-width: 576px) {
+        .search-form .input-group {
+            flex-direction: column;
+        }
+        
+        .search-form .form-control,
+        .search-form .btn {
+            border-radius: 50px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .search-form .input-group-append {
+            display: flex;
+            width: 100%;
+        }
+        
+        .search-form .input-group-append .btn {
+            flex: 1;
+        }
     }
-}
 </style>
 
 <?php require_once 'includes/footer.php'; ?>

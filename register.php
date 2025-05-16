@@ -12,43 +12,61 @@ $success = '';
 
 // Process registration form
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $company_id = sanitize($_POST['company_id']); // New company_id field
     $username = sanitize($_POST['username']);
     $email = sanitize($_POST['email']);
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
-    
-    if (empty($username) || empty($email) || empty($password) || empty($confirm_password)) {
+
+    // Check for empty fields
+    if (empty($company_id) || empty($username) || empty($email) || empty($password) || empty($confirm_password)) {
         $error = "Please fill in all fields";
     } elseif ($password != $confirm_password) {
         $error = "Passwords do not match";
     } elseif (strlen($password) < 6) {
         $error = "Password must be at least 6 characters long";
     } else {
-        $conn = connectDB();
-        
-        $username = $conn->real_escape_string($username);
-        $email = $conn->real_escape_string($email);
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-        
-        // Check if username or email already exists
-        $sql = "SELECT * FROM users WHERE username = '$username' OR email = '$email'";
-        $result = $conn->query($sql);
-        
-        if ($result->num_rows > 0) {
-            $error = "Username or email already exists";
+        // Company ID must follow format: BTCT-YYYY-NNNNN
+        if (!preg_match("/^BTCT-(19[9][0-9]|20[0-9]{2})-(\d{5})$/", $company_id)) {
+            $error = "Invalid Company ID format";
         } else {
-            // Default role is 'user'
-            $sql = "INSERT INTO users (username, email, password, role) 
-                    VALUES ('$username', '$email', '$hashed_password', 'user')";
-            
-            if ($conn->query($sql) === TRUE) {
-                $success = "Registration successful! You can now login.";
-            } else {
-                $error = "Error: " . $conn->error;
+            // Extract year from company ID and check if it's greater than the current year
+            $year = (int)substr($company_id, 5, 4);
+            if ($year > date('Y')) {
+                $error = "Invalid Company ID";
             }
         }
-        
-        $conn->close();
+
+        if (empty($error)) {
+            // Proceed with database operations
+            $conn = connectDB();
+
+            // Escape the inputs to avoid SQL injection
+            $company_id = $conn->real_escape_string($company_id);
+            $username = $conn->real_escape_string($username);
+            $email = $conn->real_escape_string($email);
+            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+            // Check if username or email already exists
+            $sql = "SELECT * FROM users WHERE username = '$username' OR email = '$email'";
+            $result = $conn->query($sql);
+
+            if ($result->num_rows > 0) {
+                $error = "Username or email already exists";
+            } else {
+                // Default role is 'user', now including company_id
+                $sql = "INSERT INTO users (company_id, username, email, password, role) 
+                        VALUES ('$company_id', '$username', '$email', '$hashed_password', 'user')";
+
+                if ($conn->query($sql) === TRUE) {
+                    $success = "Registration successful! You can now login.";
+                } else {
+                    $error = "Error: " . $conn->error;
+                }
+            }
+
+            $conn->close();
+        }
     }
 }
 
@@ -75,6 +93,10 @@ require_once 'includes/header.php';
                 <?php endif; ?>
                 
                 <form method="post" class="auth-form">
+                    <div class="form-group">
+                        <label for="company_id"><i class="fas fa-building mr-2"></i>Company ID</label>
+                        <input type="text" class="form-control" id="company_id" name="company_id" placeholder="Eg. BTCT-####-#####" required>
+                    </div>
                     <div class="form-group">
                         <label for="username"><i class="fas fa-user mr-2"></i>Username</label>
                         <input type="text" class="form-control" id="username" name="username" required>
@@ -136,4 +158,3 @@ require_once 'includes/header.php';
 </style>
 
 <?php require_once 'includes/footer.php'; ?>
-

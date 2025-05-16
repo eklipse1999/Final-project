@@ -11,16 +11,19 @@ $error = '';
 
 // Process login form
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $company_id = sanitize($_POST['company_id']); // New company_id field
     $username = sanitize($_POST['username']);
     $password = $_POST['password'];
     
-    if (empty($username) || empty($password)) {
-        $error = "Please enter both username and password";
+    if (empty($company_id) || empty($username) || empty($password)) {
+        $error = "Please enter company ID, username and password";
     } else {
         $conn = connectDB();
+        $company_id = $conn->real_escape_string($company_id);
         $username = $conn->real_escape_string($username);
         
-        $sql = "SELECT * FROM users WHERE username = '$username'";
+        // Updated query to check both company_id and username
+        $sql = "SELECT * FROM users WHERE company_id = '$company_id' AND username = '$username'";
         $result = $conn->query($sql);
         
         if ($result->num_rows == 1) {
@@ -30,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // Set session variables
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
+                $_SESSION['company_id'] = $user['company_id'];
                 $_SESSION['role'] = $user['role'];
                 
                 header("Location: dashboard.php");
@@ -38,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $error = "Invalid password";
             }
         } else {
-            $error = "User not found";
+            $error = "Invalid company ID or username";
         }
         
         $conn->close();
@@ -63,6 +67,10 @@ require_once 'includes/header.php';
                 
                 <form method="post" class="auth-form">
                     <div class="form-group">
+                        <label for="company_id"><i class="fas fa-building mr-2"></i>Company ID</label>
+                        <input type="text" class="form-control" id="company_id" name="company_id" required>
+                    </div>
+                    <div class="form-group">
                         <label for="username"><i class="fas fa-user mr-2"></i>Username</label>
                         <input type="text" class="form-control" id="username" name="username" required>
                     </div>
@@ -71,7 +79,7 @@ require_once 'includes/header.php';
                         <input type="password" class="form-control" id="password" name="password" required>
                     </div>
                     <div class="form-group form-check">
-                        <input type="checkbox" class="form-check-input" id="remember">
+                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
                         <label class="form-check-label" for="remember">Remember me</label>
                     </div>
                     <button type="submit" class="btn btn-primary btn-block">
@@ -118,4 +126,3 @@ require_once 'includes/header.php';
 </style>
 
 <?php require_once 'includes/footer.php'; ?>
-
