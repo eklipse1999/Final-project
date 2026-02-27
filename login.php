@@ -1,7 +1,6 @@
 <?php
 require_once 'includes/functions.php';
 
-// Redirect if already logged in
 if (isLoggedIn()) {
     header("Location: dashboard.php");
     exit;
@@ -9,52 +8,55 @@ if (isLoggedIn()) {
 
 $error = '';
 
-// Process login form
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $company_id = sanitize($_POST['company_id']); // New company_id field
-    $username = sanitize($_POST['username']);
-    $password = $_POST['password'];
-    
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    $company_id = trim($_POST['company_id']);
+    $username   = trim($_POST['username']);
+    $password   = $_POST['password'];
+
     if (empty($company_id) || empty($username) || empty($password)) {
         $error = "Please enter company ID, username and password";
     } else {
-        $conn = connectDB();
-        $company_id = $conn->real_escape_string($company_id);
-        $username = $conn->real_escape_string($username);
-        
+
         $conn = connectDB();
 
-// Use prepared statement
-$stmt = $conn->prepare("SELECT id, username, company_id, role, password FROM users WHERE company_id = ? AND username = ? LIMIT 1");
+        $stmt = $conn->prepare(
+            "SELECT id, username, company_id, role, password 
+             FROM users 
+             WHERE company_id = ? AND username = ? 
+             LIMIT 1"
+        );
 
-$stmt->bind_param("ss", $company_id, $username); 
-// "ss" = two strings (company_id, username)
+        $stmt->bind_param("ss", $company_id, $username);
+        $stmt->execute();
+        $result = $stmt->get_result();
 
-$stmt->execute();
-$result = $stmt->get_result();
+        if ($result->num_rows === 1) {
 
-if ($result->num_rows === 1) {
-    $user = $result->fetch_assoc();
+            $user = $result->fetch_assoc();
 
-    if (password_verify($password, $user['password'])) {
-        session_regenerate_id(true); // Prevent session fixation
+            if (password_verify($password, $user['password'])) {
 
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['username'] = $user['username'];
-        $_SESSION['company_id'] = $user['company_id'];
-        $_SESSION['role'] = $user['role'];
+                session_regenerate_id(true);
 
-        header("Location: dashboard.php");
-        exit;
-    } else {
-        $error = "Invalid credentials";
-    }
-} else {
-    $error = "Invalid credentials";
-}
+                $_SESSION['user_id']    = $user['id'];
+                $_SESSION['username']   = $user['username'];
+                $_SESSION['company_id'] = $user['company_id'];
+                $_SESSION['role']       = $user['role'];
 
-$stmt->close();
-$conn->close();;
+                header("Location: dashboard.php");
+                exit;
+
+            } else {
+                $error = "Invalid credentials";
+            }
+
+        } else {
+            $error = "Invalid credentials";
+        }
+
+        $stmt->close();
+        $conn->close();
     }
 }
 
