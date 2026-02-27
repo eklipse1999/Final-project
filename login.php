@@ -22,30 +22,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $company_id = $conn->real_escape_string($company_id);
         $username = $conn->real_escape_string($username);
         
-        // Updated query to check both company_id and username
-        $sql = "SELECT * FROM users WHERE company_id = '$company_id' AND username = '$username'";
-        $result = $conn->query($sql);
-        
-        if ($result->num_rows == 1) {
-            $user = $result->fetch_assoc();
-            
-            if (password_verify($password, $user['password'])) {
-                // Set session variables
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['username'] = $user['username'];
-                $_SESSION['company_id'] = $user['company_id'];
-                $_SESSION['role'] = $user['role'];
-                
-                header("Location: dashboard.php");
-                exit;
-            } else {
-                $error = "Invalid password";
-            }
-        } else {
-            $error = "Invalid company ID or username";
-        }
-        
-        $conn->close();
+        $conn = connectDB();
+
+// Use prepared statement
+$stmt = $conn->prepare("SELECT id, username, company_id, role, password FROM users WHERE company_id = ? AND username = ? LIMIT 1");
+
+$stmt->bind_param("ss", $company_id, $username); 
+// "ss" = two strings (company_id, username)
+
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows === 1) {
+    $user = $result->fetch_assoc();
+
+    if (password_verify($password, $user['password'])) {
+        session_regenerate_id(true); // Prevent session fixation
+
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['company_id'] = $user['company_id'];
+        $_SESSION['role'] = $user['role'];
+
+        header("Location: dashboard.php");
+        exit;
+    } else {
+        $error = "Invalid credentials";
+    }
+} else {
+    $error = "Invalid credentials";
+}
+
+$stmt->close();
+$conn->close();;
     }
 }
 
